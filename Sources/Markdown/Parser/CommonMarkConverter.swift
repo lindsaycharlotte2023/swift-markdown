@@ -68,6 +68,9 @@ fileprivate enum CommonMarkNodeType: String {
     case tableCell = "table_cell"
 
     case taskListItem = "tasklist"
+    
+    //math
+    case math = "math"
 }
 
 /// Represents the result of a cmark conversion: the current `MarkupConverterState` and the resulting converted node.
