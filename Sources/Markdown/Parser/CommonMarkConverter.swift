@@ -6,7 +6,7 @@
 
  See https://swift.org/LICENSE.txt for license information
  See https://swift.org/CONTRIBUTORS.txt for Swift project authors
-*/
+ */
 
 import cmark_gfm
 import cmark_gfm_extensions
@@ -33,7 +33,7 @@ import Foundation
 /// in the underlying cmark dependency.
 ///
 /// > Warning: **Do not make these public.**.
-fileprivate enum CommonMarkNodeType: String {
+private enum CommonMarkNodeType: String {
     case document
     case blockQuote = "block_quote"
     case list
@@ -68,22 +68,23 @@ fileprivate enum CommonMarkNodeType: String {
     case tableCell = "table_cell"
 
     case taskListItem = "tasklist"
-    
-    //math
+
+    // math
     case math = "math"
 }
 
 /// Represents the result of a cmark conversion: the current `MarkupConverterState` and the resulting converted node.
-fileprivate struct MarkupConversion<Result> {
+private struct MarkupConversion<Result> {
     let state: MarkupConverterState
     let result: Result
 }
 
 /// Represents the current state of cmark -> `Markup` conversion.
-fileprivate struct MarkupConverterState {
+private struct MarkupConverterState {
     fileprivate struct PendingTableBody {
         var range: SourceRange?
     }
+
     /// The original source whose conversion created this state.
     let source: URL?
 
@@ -116,12 +117,13 @@ fileprivate struct MarkupConverterState {
             self.headerSeen = true
         case (CMARK_EVENT_ENTER, .tableRow) where headerSeen:
             if self.pendingTableBody == nil {
-                self.pendingTableBody = PendingTableBody(range: self.range(self.node))
+                self.pendingTableBody = PendingTableBody(range: range(self.node))
                 precondition(self.pendingTableBody != nil)
             }
         case (CMARK_EVENT_EXIT, .table):
-            if let endOfTable = self.range(self.node)?.upperBound,
-               let pendingTableRange = self.pendingTableBody?.range {
+            if let endOfTable = range(self.node)?.upperBound,
+               let pendingTableRange = self.pendingTableBody?.range
+            {
                 self.pendingTableBody?.range = pendingTableRange.lowerBound..<endOfTable
             }
         default:
@@ -235,6 +237,8 @@ struct MarkupParser {
             return convertTableCell(state)
         case .inlineAttributes:
             return convertInlineAttributes(state)
+        case .math:
+            return convertMatch(state)
         default:
             fatalError("Unknown cmark node type '\(state.nodeType.rawValue)' encountered during conversion")
         }
@@ -609,7 +613,19 @@ struct MarkupParser {
         precondition(childConversion.state.node == state.node)
         precondition(childConversion.state.event == CMARK_EVENT_EXIT)
         return MarkupConversion(state: childConversion.state.next(), result: .inlineAttributes(attributes: attributes, parsedRange: parsedRange, childConversion.result))
-     }
+    }
+
+    private static func convertMatch(_ state: MarkupConverterState) -> MarkupConversion<RawMarkup> {
+        precondition(state.event == CMARK_EVENT_ENTER)
+        precondition(state.nodeType == .math)
+        let parsedRange = state.range(state.node)
+        let math = getLiteralContent(node: state.node)
+        
+        return MarkupConversion(state: state.next(), result:.mathBlock(parsedRange: parsedRange, math: math))
+    }
+    
+    
+    
 
     static func parseString(_ string: String, source: URL?, options: ParseOptions) -> Document {
         cmark_gfm_core_extensions_ensure_registered()
@@ -653,4 +669,3 @@ struct MarkupParser {
         return makeMarkup(data) as! Document
     }
 }
-

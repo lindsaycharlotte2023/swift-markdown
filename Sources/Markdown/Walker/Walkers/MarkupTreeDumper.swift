@@ -290,4 +290,9 @@ struct MarkupTreeDumper: MarkupWalker {
     mutating func visitDoxygenParameter(_ doxygenParam: DoxygenParameter) -> () {
         dump(doxygenParam, customDescription: "parameter: \(doxygenParam.name)")
     }
+    
+    mutating func visitMathBlock(_ mathBlock: MathBlock) {
+        let lines = indentLiteralBlock(mathBlock.math, from: mathBlock, countLines: false)
+        dump(mathBlock, customDescription: "\(lines)")
+    }
 }

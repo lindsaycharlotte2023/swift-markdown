@@ -71,7 +71,6 @@ fileprivate extension Table.Cell {
             mutating func visitSoftBreak(_ softBreak: SoftBreak) -> Markup? {
                 return Text(" ")
             }
-
             mutating func visitLineBreak(_ softBreak: SoftBreak) -> Markup? {
                 return Text(" ")
             }
@@ -98,6 +97,7 @@ fileprivate extension Table.Cell {
 
 /// Prints a `Markup` tree with formatting options.
 public struct MarkupFormatter: MarkupWalker {
+    
     /**
      Formatting options for Markdown, based on [CommonMark](https://commonmark.org).
      */
@@ -882,6 +882,12 @@ public struct MarkupFormatter: MarkupWalker {
         print("~", for: strikethrough)
     }
 
+    
+    public mutating func visitMathBlock(_ mathBlock: MathBlock) {
+        print("math", for: mathBlock)
+        descendInto(mathBlock)
+        print("math", for: mathBlock)
+    }
     /// Format a table as an indivisible unit.
     ///
     /// Because tables likely print multiple cells of inline content next
